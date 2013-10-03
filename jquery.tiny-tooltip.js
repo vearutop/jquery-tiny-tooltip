@@ -1,4 +1,12 @@
 // https://github.com/vearutop/jquery-tiny-tooltip
+/*
+$('#elementWithTitle').tinyTooltip();
+
+
+
+*/
+
+
 ;(function($) {
     var mouseX, mouseY, $window = $(window), last;
 
@@ -9,6 +17,15 @@
 
     $.fn.tinyTooltip = function(options) {
         this.each(function(){
+            if (this.tinyTooltip) {
+                this.tinyTooltip[options](this);
+                return;
+            }
+
+            var tipOver, tipVisible, elementOver, timer, tipElement, binds, i,
+                state = this.tinyTooltip = {};
+
+
             var b = $(this),
                 o = {
                     content: b.attr('title'),
@@ -22,18 +39,21 @@
                     offsetLeft: 10,
                     offsetRight: 20
                 };
+            if (options.clickSwitch) {
+                o.showDelay = o.hideDelay = 0;
+            }
 
             $.extend(o, options);
             b.attr('title', '');
 
-            var tipOver, tipVisible, elementOver, timer, tipElement;
 
             tipElement = $('<div class="' + o.className
                 + ' ' + o.classHidden +  '" style="position: absolute;"></div>');
 
             $('body').append(tipElement);
             if (o.content instanceof jQuery) {
-                tipElement.append(o.content.detach());
+                o.content.detach()
+                tipElement.append(o.content);
             }
             else {
                 tipElement.html(o.content);
@@ -43,27 +63,25 @@
             var tipHeight = $(tipElement).height(),
                 tipWidth = $(tipElement).width();
 
-            hide();
+            performHide();
 
             function clickToggle() {
                 if (tipVisible) {
-                    console.log('hide');
                     tipOver = elementOver =0;
                     hide();
                 }
                 else {
-                    console.log('show');
                     tipOver = elementOver = 1;
                     show();
                 }
             }
 
-            function show() {
+            function performShow() {
                 if ((!tipOver && !elementOver) || tipVisible) {
                     return;
                 }
 
-                if (last) {
+                if (last && last !== state) {
                     last.hide();
                 }
 
@@ -87,11 +105,15 @@
 
                 tipVisible = 1;
 
-                last = tipElement;
+                last = state;
             }
 
-            function hide() {
-                if (tipOver || elementOver) {
+            function show() {
+                delay(performShow, o.showDelay);
+            }
+
+            function performHide() {
+                if (!o.clickSwitch && (tipOver || elementOver)) {
                     return;
                 }
 
@@ -105,40 +127,62 @@
                 tipVisible = 0;
             }
 
-            function mouseEvent(callback, delay) {
+            function hide() {
+                delay(performHide, o.hideDelay);
+            }
+
+            function delay(callback, delay) {
                 clearTimeout(timer);
                 timer = setTimeout(callback, delay);
             }
 
-            function mouseOut(type) {
-                clearTimeout(timer);
-                timer = setTimeout(hide, option(sHideDelay));
-            }
-
             if (o.clickSwitch) {
-                b.click(clickToggle);
+                binds = [
+                    [b, 'click', clickToggle]
+                ];
             }
             else {
-                tipElement.mouseover(function(){
-                    tipOver = 1;
-                    mouseEvent(show, o.showDelay);
-                });
-
-                b.mouseover(function(){
-                    elementOver = 1;
-                    mouseEvent(show, o.showDelay);
-                });
-
-                b.mouseout(function(){
-                    elementOver = 0;
-                    mouseEvent(hide, o.hideDelay);
-                });
-
-                tipElement.mouseout(function(){
-                    tipOver = 0;
-                    mouseEvent(hide, o.hideDelay);
-                });
+                binds = [
+                    [tipElement, 'mouseover', function(){
+                        tipOver = 1;
+                        show();
+                    }],
+                    [b, 'mouseover', function(){
+                        elementOver = 1;
+                        show();
+                    }],
+                    [b, 'mouseout', function(){
+                        elementOver = 0;
+                        hide();
+                    }],
+                    [tipElement, 'mouseout', function(){
+                        tipOver = 0;
+                        hide();
+                    }]
+                ];
             }
+            for (i = 0; i < binds.length; ++i) {
+                binds[i][0].bind(binds[i][1], binds[i][2]);
+            }
+
+
+
+            state.detach = function(self){
+                for (i = 0; i < binds.length; ++i) {
+                    binds[i][0].unbind(binds[i][1], binds[i][2]);
+                }
+                tipElement.remove();
+                delete state;
+                delete self.tinyTooltip;
+            };
+            state.show = function(){
+                tipOver = elementOver = 1;
+                show();
+            };
+            state.hide = function(){
+                tipOver = elementOver = 0;
+                hide();
+            };
 
         });
 
