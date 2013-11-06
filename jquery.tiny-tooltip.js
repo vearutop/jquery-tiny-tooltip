@@ -37,7 +37,9 @@ $('#elementWithTitle').tinyTooltip();
                     offsetTop: 10,
                     offsetBottom: 20,
                     offsetLeft: 10,
-                    offsetRight: 20
+                    offsetRight: 20,
+                    afterShow: 0,
+                    afterHide: 0
                 };
             if (options.clickSwitch) {
                 o.showDelay = o.hideDelay = 0;
@@ -52,7 +54,7 @@ $('#elementWithTitle').tinyTooltip();
 
             $('body').append(tipElement);
             if (o.content instanceof jQuery) {
-                o.content.detach()
+                o.content.detach();
                 tipElement.append(o.content);
             }
             else {
@@ -105,6 +107,11 @@ $('#elementWithTitle').tinyTooltip();
 
                 tipVisible = 1;
 
+                if ('function' == typeof o.afterShow) {
+                    o.afterShow();
+                }
+
+
                 last = state;
             }
 
@@ -122,6 +129,10 @@ $('#elementWithTitle').tinyTooltip();
                 }
                 else {
                     tipElement.hide();
+                }
+
+                if ('function' == typeof o.afterHide) {
+                    o.afterHide();
                 }
 
                 tipVisible = 0;
