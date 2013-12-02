@@ -57,13 +57,16 @@ $('#elementWithTitle').tinyTooltip();
                 o.content.detach();
                 tipElement.append(o.content);
             }
+            else if (typeof o.content == 'function') {
+                tipElement.html('');
+            }
             else {
                 tipElement.html(o.content);
             }
 
 
-            var tipHeight = $(tipElement).height(),
-                tipWidth = $(tipElement).width();
+            var tipHeight = tipElement.height(),
+                tipWidth = tipElement.width();
 
             performHide();
 
@@ -78,13 +81,19 @@ $('#elementWithTitle').tinyTooltip();
                 }
             }
 
-            function performShow() {
-                if ((!tipOver && !elementOver) || tipVisible) {
-                    return;
-                }
 
-                if (last && last !== state) {
-                    last.hide();
+            function performShowCallback(content) {
+                if (false != content) {
+                    if (content instanceof jQuery) {
+                        content.detach();
+                        tipElement.append(content);
+                    }
+                    else {
+                        tipElement.html(content);
+                    }
+
+                    tipHeight = tipElement.height();
+                    tipWidth = tipElement.width();
                 }
 
                 var centerX = $window.width() / 2,
@@ -113,6 +122,24 @@ $('#elementWithTitle').tinyTooltip();
 
 
                 last = state;
+            }
+
+            function performShow() {
+                if ((!tipOver && !elementOver) || tipVisible) {
+                    return;
+                }
+
+                if (last && last !== state) {
+                    last.hide();
+                }
+
+                if (typeof o.content == 'function') {
+                    o.content(performShowCallback);
+                }
+                else {
+                    performShowCallback(false);
+                }
+
             }
 
             function show() {
